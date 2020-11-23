@@ -1,1 +1,1 @@
-# genit
+# DIGIT: Discrete Generative Models with Invertible Transformations
