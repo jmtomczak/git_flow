@@ -78,7 +78,7 @@ class IDF(nn.Module):
     def log_prior(self, x):
         p = torch.sigmoid(self.p)
         log_p = self.log_integer_probability(x, p, self.mu)
-        return log_p.sum()
+        return log_p.sum(1)
 
     def prior_sample(self, batchSize, D=2, intMax=100):
         ints = np.expand_dims(np.arange(-intMax, intMax + 1), 0)
