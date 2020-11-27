@@ -14,6 +14,9 @@ def training(name, max_patience, num_epochs, flow, optimizer, training_loader, v
         # TRAINING
         flow.train()
         for indx_batch, batch in enumerate(training_loader):
+            if hasattr(flow, 'dequantization'):
+                if flow.dequantization:
+                    batch = batch + torch.rand(batch.shape)
             loss = -flow.forward(batch).mean()
 
             optimizer.zero_grad()
