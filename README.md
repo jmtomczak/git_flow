@@ -1,1 +1,1 @@
-# General Invertible Transformations for Flow-basedGenerative Modeling
+# General Invertible Transformations for Flow-based Generative Modeling
