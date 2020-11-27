@@ -9,12 +9,11 @@ from torch.utils.data import DataLoader
 from pylab import rcParams
 
 from models.idf import IDF, IDF2, IDF4, IDF8
-from models.realnvp import RealNVP, RealNVP4
+from models.realnvp import RealNVP
 
 from utils.datasets import Digits
 from utils.training import training
 from utils.evaluation import evaluation, plot_curve, samples_real
-from utils.nn import Reshape3d, Flatten
 
 
 if __name__ == '__main__':
@@ -27,15 +26,12 @@ if __name__ == '__main__':
     val_loader = DataLoader(val_data, batch_size=64, shuffle=False)
     test_loader = DataLoader(test_data, batch_size=64, shuffle=False)
 
-    # setup
-    # models = ['idf', 'idf4']
-    # models = ['realnvp']
-    models = ['idf8']
+    # SETUP
+    models = ['idf', 'idf4', 'idf8', 'realnvp']
     num_repetitions = range(5)
 
     D = 64
     M = 256
-    num_comp = 5
 
     lr = 1e-3
     num_epochs = 1000
@@ -44,7 +40,7 @@ if __name__ == '__main__':
     # REPETITIONS
     for m in models:
         for r in num_repetitions:
-            result_dir = 'results/' +'more_flows_' + m + '_' + str(r) + '/'
+            result_dir = 'results/' + m + '_' + str(r) + '/'
 
             if not (os.path.isdir(result_dir)):
                 os.mkdir(result_dir)
@@ -54,7 +50,7 @@ if __name__ == '__main__':
 
             if name == 'idf8':
                 print(name + " initialized!")
-                num_flows = 4
+                num_flows = 2
                 nett_a = lambda: nn.Sequential(nn.Linear(7 * (D // 8), M), nn.LeakyReLU(),
                                                nn.Linear(M, M), nn.LeakyReLU(),
                                                nn.Linear(M, D // 8))
@@ -108,30 +104,6 @@ if __name__ == '__main__':
                                                nn.Linear(M, M), nn.LeakyReLU(),
                                                nn.Linear(M, D // 4))
 
-                # nett_a = lambda: nn.Sequential(Reshape3d(size=(3, int(np.sqrt(D)) // 4, int(np.sqrt(D)))),
-                #                                nn.Conv2d(3, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, 1, kernel_size=(3, 3), stride=1, padding=1),
-                #                                Flatten())
-                #
-                # nett_b = lambda: nn.Sequential(Reshape3d(size=(3, int(np.sqrt(D)) // 4, int(np.sqrt(D)))),
-                #                                nn.Conv2d(3, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, 1, kernel_size=(3, 3), stride=1, padding=1),
-                #                                Flatten())
-                #
-                # nett_c = lambda: nn.Sequential(Reshape3d(size=(3, int(np.sqrt(D)) // 4, int(np.sqrt(D)))),
-                #                                nn.Conv2d(3, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, 1, kernel_size=(3, 3), stride=1, padding=1),
-                #                                Flatten())
-                #
-                # nett_d = lambda: nn.Sequential(Reshape3d(size=(3, int(np.sqrt(D)) // 4, int(np.sqrt(D)))),
-                #                                nn.Conv2d(3, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, M, kernel_size=(3, 3), stride=1, padding=1), nn.LeakyReLU(),
-                #                                nn.Conv2d(M, 1, kernel_size=(3, 3), stride=1, padding=1),
-                #                                Flatten())
-
                 flow = IDF4(nett_a, nett_b, nett_c, nett_d, num_flows, D)
 
             elif name == 'idf2':
@@ -154,12 +126,6 @@ if __name__ == '__main__':
                                              nn.Linear(M, M), nn.LeakyReLU(),
                                              nn.Linear(M, D // 2))
 
-                # nett = lambda: nn.Sequential(Reshape3d(size=(1, int(np.sqrt(D)) // 2, int(np.sqrt(D)))),
-                #                              nn.Conv2d(1, M, kernel_size=(3,3), stride=1, padding=1), nn.LeakyReLU(),
-                #                              nn.Conv2d(M, M, kernel_size=(3,3), stride=1, padding=1), nn.LeakyReLU(),
-                #                              nn.Conv2d(M, 1, kernel_size=(3,3), stride=1, padding=1),
-                #                              Flatten())
-
                 flow = IDF(nett, num_flows, D)
 
             elif name == 'realnvp':
@@ -175,37 +141,6 @@ if __name__ == '__main__':
 
                 prior = torch.distributions.MultivariateNormal(torch.zeros(D), torch.eye(D))
                 flow = RealNVP(nets, nett, num_flows, prior, dequantization=True)
-
-            elif name == 'realnvp4':
-                num_flows = 8
-
-                nets_b = lambda: nn.Sequential(nn.Linear(D // 4, M), nn.LeakyReLU(),
-                                             nn.Linear(M, M), nn.LeakyReLU(),
-                                             nn.Linear(M, D // 4), nn.Tanh())
-
-                nets_c = lambda: nn.Sequential(nn.Linear(2 * D // 4, M), nn.LeakyReLU(),
-                                               nn.Linear(M, M), nn.LeakyReLU(),
-                                               nn.Linear(M, D // 4), nn.Tanh())
-
-                nets_d = lambda: nn.Sequential(nn.Linear(3 * D // 4, M), nn.LeakyReLU(),
-                                               nn.Linear(M, M), nn.LeakyReLU(),
-                                               nn.Linear(M, D // 4), nn.Tanh())
-
-
-                nett_b = lambda: nn.Sequential(nn.Linear(D // 4, M), nn.LeakyReLU(),
-                                               nn.Linear(M, M), nn.LeakyReLU(),
-                                               nn.Linear(M, D // 4))
-
-                nett_c = lambda: nn.Sequential(nn.Linear(2 * D // 4, M), nn.LeakyReLU(),
-                                               nn.Linear(M, M), nn.LeakyReLU(),
-                                               nn.Linear(M, D // 4))
-
-                nett_d = lambda: nn.Sequential(nn.Linear(3 * D // 4, M), nn.LeakyReLU(),
-                                               nn.Linear(M, M), nn.LeakyReLU(),
-                                               nn.Linear(M, D // 4))
-
-                prior = torch.distributions.MultivariateNormal(torch.zeros(D), torch.eye(D))
-                flow = RealNVP4(nets_b, nets_c, nets_d, nett_b, nett_c, nett_d, num_flows, prior, dequantization=True)
 
             # OPTIMIZER
             optimizer = torch.optim.Adamax([p for p in flow.parameters() if p.requires_grad == True], lr=lr)

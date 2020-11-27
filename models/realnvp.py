@@ -19,9 +19,6 @@ class RealNVP(nn.Module):
     def coupling(self, x, index, forward=True):
         (xa, xb) = torch.chunk(x, 2, 1)
 
-        # ya = xa
-
-        # yb
         s = self.s[index](xa)
         t = self.t[index](xa)
 
@@ -49,82 +46,6 @@ class RealNVP(nn.Module):
         for i in reversed(range(self.num_flows)):
             x = self.permute(x)
             x, _, _ = self.coupling(x, i, forward=False)
-
-        return x
-
-    def forward(self, x):
-        z, log_det_J = self.f(x)
-        return self.prior.log_prob(z) + log_det_J
-
-    def sample(self, batchSize, D=2):
-        z = self.prior.sample((batchSize, D))
-        z = z[:, 0, :]
-        x = self.f_inv(z)
-        return x.view(-1, D)
-
-
-class RealNVP4(nn.Module):
-    def __init__(self, nets_b, nets_c, nets_d, nett_b, nett_c, nett_d, num_flows, prior, dequantization=True):
-        super(RealNVP4, self).__init__()
-
-        print('RealNVP4 by JT.')
-
-        self.dequantization = dequantization
-
-        self.prior = prior
-        self.t_b = torch.nn.ModuleList([nett_b() for _ in range(num_flows)])
-        self.t_c = torch.nn.ModuleList([nett_c() for _ in range(num_flows)])
-        self.t_d = torch.nn.ModuleList([nett_d() for _ in range(num_flows)])
-
-        self.s_b = torch.nn.ModuleList([nets_b() for _ in range(num_flows)])
-        self.s_c = torch.nn.ModuleList([nets_c() for _ in range(num_flows)])
-        self.s_d = torch.nn.ModuleList([nets_d() for _ in range(num_flows)])
-        self.num_flows = num_flows
-
-    def coupling(self, x, index, forward=True):
-        (xa, xb, xc, xd) = torch.chunk(x, 4, 1)
-
-        # ya = xa
-
-        # yb, yc, yd
-        if forward:
-            s_b = self.s_b[index](xa)
-            yb = torch.exp(-s_b) * (xb - self.t_b[index](xa))
-
-            s_c = self.s_c[index](torch.cat((xa, yb), 1))
-            yc = torch.exp(-s_c) * (xb - self.t_c[index](torch.cat((xa, yb), 1)))
-
-            s_d = self.s_d[index](torch.cat((xa, yb, yc), 1))
-            yd = torch.exp(-s_d) * (xb - self.t_d[index](torch.cat((xa, yb, yc), 1)))
-        else:
-            s_b = self.s_b[index](xa)
-            yb = torch.exp(s_b) * xb + self.t_b[index](xa)
-
-            s_c = self.s_c[index](torch.cat((xa, yb), 1))
-            yc = torch.exp(s_c) * xb + self.t_c[index](torch.cat((xa, yb), 1))
-
-            s_d = self.s_d[index](torch.cat((xa, yb, yc), 1))
-            yd = torch.exp(s_d) * xb + self.t_d[index](torch.cat((xa, yb, yc), 1))
-
-        return torch.cat((xa, yb, yc, yd), 1), torch.cat((s_b, s_c, s_d), 1)
-
-    def permute(self, x):
-        return x.flip(1)
-
-    def f(self, x):
-        log_det_J, z = x.new_zeros(x.shape[0]), x
-        for i in range(self.num_flows):
-            z, s = self.coupling(z, i, forward=True)
-            z = self.permute(z)
-            log_det_J = log_det_J - s.sum(dim=1)
-
-        return z, log_det_J
-
-    def f_inv(self, z):
-        x = z
-        for i in reversed(range(self.num_flows)):
-            x = self.permute(x)
-            x, _ = self.coupling(x, i, forward=False)
 
         return x
 

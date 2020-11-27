@@ -19,15 +19,9 @@ class IDF(nn.Module):
         self.p = nn.Parameter(torch.zeros(1, D))
         self.mu = nn.Parameter(torch.ones(1, D) * 0.5)
 
-        # self.a = nn.Parameter(torch.zeros(len(self.t)))
-
     def coupling(self, x, index, forward=True):
         (xa, xb) = torch.chunk(x, 2, 1)
 
-        # ya = xa
-
-        # yb: rezero trick
-        #         t = self.t[index](self.a[index] * xa)
         t = self.t[index](xa)
 
         if forward:
@@ -112,18 +106,8 @@ class IDF2(nn.Module):
         self.p = nn.Parameter(torch.zeros(1, D))
         self.mu = nn.Parameter(torch.ones(1, D) * 0.5)
 
-    #         self.a = nn.Parameter(torch.zeros(len(self.t)))
-
     def coupling(self, x, index, forward=True):
         (xa, xb) = torch.chunk(x, 2, 1)
-
-        # ya = x_a + t_a(xb,xc,xd)
-        # yb = x_b + t_b(ya,xc,xd)
-
-        # ya: rezero trick
-
-        # yb
-        # t = self.t[index](self.a[index] * xa)
 
         if forward:
             ya = xa + self.round(self.t_a[index](xb))
@@ -211,20 +195,8 @@ class IDF4(nn.Module):
         self.p = nn.Parameter(torch.zeros(1, D))
         self.mu = nn.Parameter(torch.ones(1, D) * 0.5)
 
-        # self.a = nn.Parameter(torch.zeros(len(self.t), 4))
-
     def coupling(self, x, index, forward=True):
         (xa, xb, xc, xd) = torch.chunk(x, 4, 1)
-
-        # ya = x_a + t_a(xb,xc,xd)
-        # yb = x_b + t_b(ya,xc,xd)
-        # yc = x_c + t_c(ya,yb,xd)
-        # yd = x_d + t_d(ya,yb,yc)
-
-        # ya: rezero trick
-
-        # yb
-        # t = self.t[index](self.a[index] * xa)
 
         if forward:
             ya = xa + self.round(self.t_a[index](torch.cat((xb, xc, xd), 1)))
@@ -320,20 +292,8 @@ class IDF8(nn.Module):
         self.p = nn.Parameter(torch.zeros(1, D))
         self.mu = nn.Parameter(torch.ones(1, D) * 0.5)
 
-        # self.a = nn.Parameter(torch.zeros(len(self.t), 8))
-
     def coupling(self, x, index, forward=True):
         (xa, xb, xc, xd, xe, xf, xg, xh) = torch.chunk(x, 8, 1)
-
-        # ya = x_a + t_a(xb,xc,xd)
-        # yb = x_b + t_b(ya,xc,xd)
-        # yc = x_c + t_c(ya,yb,xd)
-        # yd = x_d + t_d(ya,yb,yc)
-
-        # ya: rezero trick
-
-        # yb
-        # t = self.t[index](self.a[index] * xa)
 
         if forward:
             ya = xa + self.round(self.t_a[index](torch.cat((xb, xc, xd, xe, xf, xg, xh), 1)))
