@@ -1,1 +1,1 @@
-# DIGIT: Discrete Generative Models with Invertible Transformations
+# General Invertible Transformations for Flow-basedGenerative Modeling
